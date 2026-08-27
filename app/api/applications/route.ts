@@ -1,0 +1,2 @@
+import {NextResponse} from "next/server";import {currentUser} from "@/lib/auth";import {db} from "@/lib/db";
+export async function POST(req:Request){const u=await currentUser();if(!u||u.role!=="STUDENT")return NextResponse.json({error:"Students only"},{status:403});const {jobId}=await req.json();try{const a=await db.application.create({data:{userId:u.id,jobId}});return NextResponse.json(a)}catch{return NextResponse.json({error:"Already applied or invalid job"},{status:400})}}

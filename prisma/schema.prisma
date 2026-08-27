@@ -1,0 +1,383 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  RECRUITER
+  ADMIN
+}
+
+enum ApplicationStatus {
+  APPLIED
+  UNDER_REVIEW
+  SHORTLISTED
+  INTERVIEW_SCHEDULED
+  SELECTED
+  REJECTED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model User {
+  id              String        @id @default(cuid())
+  studentId       String?       @unique
+  name            String
+  email           String        @unique
+  passwordHash    String
+  role            Role          @default(STUDENT)
+  phone           String?
+  college         String?
+  degree          String?
+  branch          String?
+  semester        String?
+  graduationYear  Int?
+  skills          String        @default("")
+  bio             String?
+  github          String?
+  linkedin        String?
+  portfolio       String?
+  profileImage    String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  recruiter       Recruiter?
+  resume          Resume?
+  attempts        AssessmentAttempt[]
+  assessmentSessions AssessmentSession[]
+  applications    Application[]
+  savedJobs       SavedJob[]
+  certificates    Certificate[]
+  taskSubmissions TaskSubmission[]
+  passwordResets  PasswordResetToken[]
+  mockInterviews  MockInterview[]
+  invitations     Invitation[]  @relation("StudentInvitations")
+  notifications   Notification[]
+  subscription    Subscription?
+  recruiterConnections RecruiterConnection[] @relation("StudentConnections")
+  connectionMessages   ConnectionMessage[] @relation("ConnectionSenders")
+  assessmentFeedback   AssessmentFeedback[]
+}
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  plan                 String   @default("BASIC")
+  status               String   @default("ACTIVE")
+  billingCycle         String   @default("FREE")
+  testsUsed            Int      @default(0)
+  provider             String?
+  transactionId        String?
+  startedAt            DateTime @default(now())
+  renewalDate          DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AssessmentFeedback {
+  id        String   @id @default(cuid())
+  userId    String
+  attemptId String   @unique
+  rating    Int
+  feedback  String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempt   AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+}
+
+model Recruiter {
+  id          String        @id @default(cuid())
+  companyId   String?       @unique
+  userId      String        @unique
+  companyName String
+  website     String?
+  description String?
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobs        Job[]
+  invitations Invitation[]  @relation("RecruiterInvitations")
+  connections RecruiterConnection[] @relation("RecruiterConnections")
+}
+
+model RecruiterConnection {
+  id          String   @id @default(cuid())
+  studentId   String
+  recruiterId String
+  status      String   @default("PENDING")
+  message     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  student     User     @relation("StudentConnections", fields: [studentId], references: [id], onDelete: Cascade)
+  recruiter   Recruiter @relation("RecruiterConnections", fields: [recruiterId], references: [id], onDelete: Cascade)
+  messages    ConnectionMessage[]
+
+  @@unique([studentId, recruiterId])
+  @@index([studentId, status])
+  @@index([recruiterId, status])
+}
+
+model ConnectionMessage {
+  id           String   @id @default(cuid())
+  connectionId String
+  senderId     String
+  body         String
+  createdAt    DateTime @default(now())
+  connection   RecruiterConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  sender       User     @relation("ConnectionSenders", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([connectionId, createdAt])
+}
+
+model Resume {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  kind       String
+  fileName   String?
+  mimeType   String?
+  fileData   String?
+  content    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Invitation {
+  id          String           @id @default(cuid())
+  recruiterId String
+  studentId   String
+  jobId       String?
+  roleTitle   String?
+  message     String?
+  status      InvitationStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  recruiter   Recruiter        @relation("RecruiterInvitations", fields: [recruiterId], references: [id], onDelete: Cascade)
+  student     User             @relation("StudentInvitations", fields: [studentId], references: [id], onDelete: Cascade)
+  job         Job?             @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([studentId, status])
+  @@index([recruiterId, status])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("INFO") // INVITATION, INVITATION_ACCEPTED, INVITATION_REJECTED, APPLICATION, SYSTEM
+  link      String?
+  read      Boolean  @default(false)
+  metadata  String?  // JSON string with extra details (e.g. invitationId, companyId)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model MockInterview {
+  id            String   @id @default(cuid())
+  userId        String
+  role          String
+  difficulty    String
+  interviewType String
+  duration      Int
+  score         Int
+  status        String   @default("COMPLETED")
+  questions     String
+  answers       String
+  feedback      String
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Job {
+  id              String        @id @default(cuid())
+  recruiterId     String
+  title           String
+  description     String
+  type            String
+  location        String
+  deadline        DateTime
+  qualifications  String
+  requiredSkills  String
+  preferredSkills String
+  vacancies       Int           @default(1)
+  createdAt       DateTime      @default(now())
+  recruiter       Recruiter     @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
+  applications    Application[]
+  savedBy         SavedJob[]
+  invitations     Invitation[]
+}
+
+model SavedJob {
+  id        String   @id @default(cuid())
+  userId    String
+  jobId     String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  @@unique([userId, jobId])
+}
+
+model Assessment {
+  id          String       @id @default(cuid())
+  title       String
+  education   String
+  course      String
+  semester    String
+  subject     String
+  questions   Question[]
+  attempts    AssessmentAttempt[]
+  sessions    AssessmentSession[]
+}
+
+model Question {
+  id            String      @id @default(cuid())
+  assessmentId  String
+  text          String
+  options       String
+  correctIndex  Int
+  explanation   String
+  difficulty    String
+  marks         Int         @default(1)
+  topic         String
+  assessment    Assessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+}
+
+model AssessmentAttempt {
+  id             String      @id @default(cuid())
+  userId         String
+  assessmentId   String
+  answers        String
+  score          Int
+  total          Int
+  skillLevel     String
+  strengths      String
+  weaknesses     String
+  recommendations String
+  cheatingFlags  String       @default("[]")
+  createdAt      DateTime    @default(now())
+  status         String      @default("COMPLETED")
+  terminationReason String?
+  terminatedAt   DateTime?
+  sessionId      String?     @unique
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessment     Assessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  certificate    Certificate?
+  feedback       AssessmentFeedback?
+  session        AssessmentSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+}
+
+model AssessmentSession {
+  id           String           @id @default(cuid())
+  userId       String
+  assessmentId String
+  questionIds  String
+  expiresAt    DateTime
+  submittedAt  DateTime?
+  flagCount    Int              @default(0)
+  firstFlag    String?
+  terminatedAt DateTime?
+  terminationReason String?
+  createdAt    DateTime         @default(now())
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessment   Assessment       @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  attempt      AssessmentAttempt?
+
+  @@index([userId, assessmentId, createdAt])
+}
+
+model AssessmentLock {
+  id           String   @id @default(cuid())
+  userId       String
+  assessmentId String
+  lockedUntil  DateTime
+  reason       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, assessmentId])
+  @@index([userId, lockedUntil])
+}
+
+model Application {
+  id        String            @id @default(cuid())
+  userId    String
+  jobId     String
+  status    ApplicationStatus @default(APPLIED)
+  note      String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job       Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  @@unique([userId, jobId])
+}
+
+model Certificate {
+  id         String   @id @default(cuid())
+  userId     String
+  attemptId  String   @unique
+  certificateNo String @unique
+  score      Int
+  skillLevel String
+  issuedAt   DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempt    AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+}
+
+model Task {
+  id               String           @id @default(cuid())
+  title            String
+  slug             String           @unique
+  category         String
+  difficulty       String
+  points           Int              @default(100)
+  estimatedMinutes Int              @default(30)
+  description      String
+  instructions     String
+  starterCode      String?
+  solutionGuide    String?
+  tags             String
+  createdAt        DateTime         @default(now())
+  submissions      TaskSubmission[]
+}
+
+model TaskSubmission {
+  id        String   @id @default(cuid())
+  userId    String
+  taskId    String
+  status    String   @default("COMPLETED")
+  code      String?
+  notes     String?
+  score     Int      @default(100)
+  feedback  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, taskId])
+}
