@@ -4,7 +4,7 @@ This project implements the uploaded HireLytix-style requirements as a full-stac
 
 ## Stack
 - Next.js App Router + TypeScript
-- Prisma ORM + SQLite for a zero-setup local database
+- Prisma ORM + Supabase PostgreSQL
 - JWT httpOnly cookie sessions
 - bcrypt password hashing
 - Role-based Student / Recruiter access
@@ -19,7 +19,7 @@ npm ci
 Run this once after cloning. Do not reinstall dependencies for normal code changes.
 
 ## 2. Configure
-Copy `.env.example` to `.env` and keep the default SQLite URL for the demo.
+Copy `.env.example` to `.env`, then set `DATABASE_URL` to your Supabase pooler connection string and `DIRECT_URL` to your Supabase direct connection string. Keep `.env` local and never commit it.
 
 Authentication uses separate portals at `/login/student` and `/login/recruiter`, with matching account creation routes at `/register/student` and `/register/recruiter`. Password recovery uses the phone number saved on the account; in local development, the verification code is logged in the server terminal because no SMS provider is configured.
 
