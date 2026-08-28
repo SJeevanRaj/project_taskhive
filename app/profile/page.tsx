@@ -18,17 +18,21 @@ export default async function Profile({ searchParams }: { searchParams: Promise<
   if (!subscription) redirect("/subscription");
   const remainingTests = await getRemainingTests(u.id, subscription);
 
-  const certificates = await db.certificate.findMany({
-    where: { userId: u.id },
-    include: { attempt: { include: { assessment: true } } }
-  });
-
-  const completedTasks = await db.taskSubmission.findMany({
-    where: { userId: u.id, status: "COMPLETED" },
-    include: { task: true }
-  });
-  const interviewBest = await db.mockInterview.aggregate({ where: { userId: u.id }, _max: { score: true } });
-  const resume = await db.resume.findUnique({ where: { userId: u.id }, select: { kind: true, fileName: true, mimeType: true, updatedAt: true } });
+  const [certificates, completedTasks, interviewBest, resume] = await Promise.all([
+    db.certificate.findMany({
+      where: { userId: u.id },
+      include: { attempt: { include: { assessment: true } } }
+    }),
+    db.taskSubmission.findMany({
+      where: { userId: u.id, status: "COMPLETED" },
+      include: { task: true }
+    }),
+    db.mockInterview.aggregate({ where: { userId: u.id }, _max: { score: true } }),
+    db.resume.findUnique({
+      where: { userId: u.id },
+      select: { kind: true, fileName: true, mimeType: true, updatedAt: true }
+    })
+  ]);
 
   return (
     <Shell>

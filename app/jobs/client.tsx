@@ -23,6 +23,9 @@ export default function JobsClient({
   const [q, setQ] = useState(initialQuery);
   const [type, setType] = useState("ALL");
   const [statusMsg, setStatusMsg] = useState("");
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(
+    () => new Set(jobs.filter((job) => job.applied).map((job) => job.id))
+  );
 
   const calculateMatch = (required: string) => {
     const req = required.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
@@ -58,8 +61,8 @@ export default function JobsClient({
       });
       const d = await r.json();
       if (r.ok) {
+        setAppliedJobIds((previous) => new Set(previous).add(id));
         setStatusMsg("Application submitted successfully! Tracking in your Applications tab.");
-        setTimeout(() => location.reload(), 800);
       } else {
         setStatusMsg(d.error || "Unable to apply. You might have already applied.");
       }
@@ -107,7 +110,7 @@ export default function JobsClient({
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
-                borderColor: j.applied ? "#10b981" : "#1d3048"
+                  borderColor: j.applied || appliedJobIds.has(j.id) ? "#10b981" : "#1d3048"
               }}
             >
               <img
@@ -176,14 +179,14 @@ export default function JobsClient({
                 <button
                   type="button"
                   className="btn primary"
-                  disabled={j.applied}
+                  disabled={j.applied || appliedJobIds.has(j.id)}
                   onClick={() => apply(j.id)}
                   style={{
                     width: "100%",
                       background: "#c9a66b"
                   }}
                 >
-                  {j.applied ? "Application Submitted ✓" : "Apply to Opportunity 🚀"}
+                  {j.applied || appliedJobIds.has(j.id) ? "Application Submitted ✓" : "Apply to Opportunity 🚀"}
                 </button>
               </div>
             </div>

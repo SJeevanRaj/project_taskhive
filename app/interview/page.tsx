@@ -9,7 +9,12 @@ export default async function InterviewHome({ searchParams }: { searchParams: Pr
   const params = await searchParams;
   const user = await currentUser();
   if (!user || user.role !== "STUDENT") redirect("/login/student");
-  const interviews = await db.mockInterview.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 20 });
+  const interviews = await db.mockInterview.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    select: { id: true, role: true, interviewType: true, difficulty: true, score: true, createdAt: true }
+  });
   const scores = interviews.map((item) => item.score);
   const lastScore = scores[0] || 0;
   const bestScore = scores.length ? Math.max(...scores) : 0;

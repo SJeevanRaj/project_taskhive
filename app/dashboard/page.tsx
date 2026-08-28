@@ -14,8 +14,13 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   if (!user) redirect("/login");
   if (user.role === "RECRUITER") redirect("/recruiter?tab=overview");
 
-  const [attempts, taskSubmissions, totalTasks, totalAssessments, certificatesCount, mockInterviews, jobs, userApplications, connectionCount, newConnectionRequests, recruiterCount] = await Promise.all([
-    db.assessmentAttempt.findMany({
+  const [attemptStats, latestAttempt, taskSubmissions, totalTasks, certificatesCount, mockInterviews, jobs, userApplications, connectionCount, newConnectionRequests, recruiterCount] = await Promise.all([
+    db.assessmentAttempt.aggregate({
+      where: { userId: user.id },
+      _avg: { score: true },
+      _count: { _all: true }
+    }),
+    db.assessmentAttempt.findFirst({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
       include: { assessment: { select: { title: true } } }
@@ -25,7 +30,6 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       include: { task: { select: { title: true, category: true, slug: true } } }
     }),
     db.task.count(),
-    db.assessment.count(),
     db.certificate.count({ where: { userId: user.id } }),
     db.mockInterview.findMany({
       where: { userId: user.id },
@@ -47,9 +51,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const bestInterviewScore = interviewScores.length ? Math.max(...interviewScores) : 0;
   const appliedJobIds = new Set(userApplications.map((a) => a.jobId));
 
-  const avgScore = attempts.length
-    ? Math.round(attempts.reduce((a, b) => a + b.score, 0) / attempts.length)
-    : 0;
+  const avgScore = Math.round(attemptStats._avg.score || 0);
 
   const totalTaskPoints = taskSubmissions.reduce((sum, s) => sum + s.score, 0);
 
@@ -158,40 +160,40 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <section className="card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
               <h3 style={{ margin: 0 }}>Latest AI Skill Diagnostics</h3>
-              {attempts[0] && (
+              {latestAttempt && (
                 <span className="tag" style={{ background: "#e5d7c0", color: "#40504b" }}>
-                  {attempts[0].skillLevel} Level
+                  {latestAttempt.skillLevel} Level
                 </span>
               )}
             </div>
 
-            {attempts[0] ? (
+            {latestAttempt ? (
               <>
                 <p style={{ margin: "0 0 14px", fontSize: 14 }}>
-                  <b>{attempts[0].assessment.title}</b> • Assessed on {attempts[0].createdAt.toLocaleDateString()}
+                  <b>{latestAttempt.assessment.title}</b> • Assessed on {latestAttempt.createdAt.toLocaleDateString()}
                 </p>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 14, margin: "14px 0", background: "linear-gradient(135deg, #eef2ff, #ecfeff)", padding: 16, borderRadius: 12, border: "1px solid #c7d2fe" }}>
                   <div>
                     <small className="muted">Assessed Score</small>
-                    <div style={{ fontSize: 36, fontWeight: 800, color: attempts[0].score > 80 ? "#34d399" : "#60a5fa" }}>
-                      {attempts[0].score}%
+                    <div style={{ fontSize: 36, fontWeight: 800, color: latestAttempt.score > 80 ? "#34d399" : "#60a5fa" }}>
+                      {latestAttempt.score}%
                     </div>
                   </div>
                   <div>
                     <small className="muted">Next Recommended Step</small>
                     <p style={{ margin: "4px 0 0", fontSize: 13, color: "#475569", lineHeight: 1.5 }}>
-                      {attempts[0].recommendations}
+                      {latestAttempt.recommendations}
                     </p>
                   </div>
                 </div>
 
                 <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                  <Link className="btn secondary" href={`/assessment/result/${attempts[0].id}`} style={{ fontSize: 13 }}>
+                  <Link className="btn secondary" href={`/assessment/result/${latestAttempt.id}`} style={{ fontSize: 13 }}>
                     View Full Diagnostic
                   </Link>
-                  {attempts[0].score > 80 && (
-                    <Link className="btn primary" href={`/certificate/${attempts[0].id}`} style={{ fontSize: 13 }}>
+                  {latestAttempt.score > 80 && (
+                    <Link className="btn primary" href={`/certificate/${latestAttempt.id}`} style={{ fontSize: 13 }}>
                       🎓 View Certificate
                     </Link>
                   )}

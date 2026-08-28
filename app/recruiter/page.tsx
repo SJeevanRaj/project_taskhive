@@ -69,43 +69,44 @@ export default async function Recruiter({
     // Keep defaults
   }
 
-  const jobs = await db.job.findMany({
-    where: { recruiterId: recruiter.id },
-    include: {
-      applications: {
-        include: {
-          user: {
-            include: {
-              certificates: {
-                include: { attempt: { include: { assessment: true } } }
-              },
-              taskSubmissions: {
-                where: { status: "COMPLETED" },
-                include: { task: true }
+  const [jobs, talentStudents] = await Promise.all([
+    db.job.findMany({
+      where: { recruiterId: recruiter.id },
+      include: {
+        applications: {
+          include: {
+            user: {
+              include: {
+                certificates: {
+                  include: { attempt: { include: { assessment: true } } }
+                },
+                taskSubmissions: {
+                  where: { status: "COMPLETED" },
+                  include: { task: true }
+                }
               }
             }
-          }
-        },
-        orderBy: { createdAt: "desc" }
-      }
-    },
-    orderBy: { createdAt: "desc" }
-  });
-
-  const talentStudents = await db.user.findMany({
-    where: { role: "STUDENT" },
-    include: {
-      certificates: {
-        include: { attempt: { include: { assessment: true } } }
+          },
+          orderBy: { createdAt: "desc" }
+        }
       },
-      taskSubmissions: {
-        where: { status: "COMPLETED" },
-        include: { task: true }
-      }
-    },
-    take: 50,
-    orderBy: { createdAt: "desc" }
-  });
+      orderBy: { createdAt: "desc" }
+    }),
+    db.user.findMany({
+      where: { role: "STUDENT" },
+      include: {
+        certificates: {
+          include: { attempt: { include: { assessment: true } } }
+        },
+        taskSubmissions: {
+          where: { status: "COMPLETED" },
+          include: { task: true }
+        }
+      },
+      take: 50,
+      orderBy: { createdAt: "desc" }
+    })
+  ]);
 
   const serializedJobs = jobs.map((j) => ({
     id: j.id,
