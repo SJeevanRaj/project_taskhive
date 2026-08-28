@@ -48,5 +48,12 @@ export const currentUser = cache(async () => {
 
 export async function logout() {
   const jar = await cookies();
-  jar.set("taskhive_session", "", { httpOnly: true, expires: new Date(0), path: "/" });
+  jar.set("taskhive_session", "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    expires: new Date(0),
+    maxAge: 0
+  });
 }
