@@ -1,5 +1,6 @@
 import { currentUser } from "@/lib/auth";
 import SidebarNav, { SidebarItem } from "./SidebarNav";
+import MobileNav from "./MobileNav";
 
 export default async function Sidebar() {
   const user = await currentUser();
@@ -35,12 +36,15 @@ export default async function Sidebar() {
     ] }
   ];
   return (
-    <aside className="sidebar">
+    <>
+      <MobileNav sections={sections} />
+      <aside className="sidebar">
       <div className="sidebar-brand">
         <img className="sidebar-brand-logo" src="/hirelytix-logo.svg" alt="HireLytix" width={34} height={34} />
         <span>HireLytix <em>{isRecruiter ? "Recruiter" : ""}</em></span>
       </div>
       <SidebarNav sections={sections} />
-    </aside>
+      </aside>
+    </>
   );
 }
