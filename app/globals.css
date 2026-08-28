@@ -25,6 +25,14 @@ a{text-decoration:none;color:inherit}
 .side-bottom small{display:block;color:#60738e;margin-top:5px;font-size:11px}
 .main{flex:1;padding:32px;max-width:1500px;margin:auto;width:100%}
 footer{text-align:center;padding:25px;color:#526984;font-size:12px}
+.page-loading{padding:32px;min-height:420px}
+.page-loading-heading{display:flex;flex-direction:column;gap:12px;margin-bottom:25px}
+.page-loading-line,.page-loading-card{display:block;background:linear-gradient(90deg,#e9dcc4 25%,#f8f1e5 50%,#e9dcc4 75%);background-size:200% 100%;animation:page-loading-shimmer 1.2s ease-in-out infinite}
+.page-loading-title{width:min(380px,70%);height:30px;border-radius:8px}
+.page-loading-copy{width:min(560px,90%);height:14px;border-radius:6px}
+.page-loading-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+.page-loading-card{height:150px;border:1px solid #d8cbb6;border-radius:17px}
+@keyframes page-loading-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 /* Landing */
 .landing{min-height:100vh;position:relative;overflow:hidden;background:#f3ead8}
