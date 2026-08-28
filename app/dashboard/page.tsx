@@ -6,7 +6,7 @@ import Link from "next/link";
 import { matchJob } from "@/lib/ai";
 import { Search } from "lucide-react";
 import Reveal from "@/components/Reveal";
-import StudentChatbot from "@/components/StudentChatbot";
+import LazyStudentChatbot from "@/components/LazyStudentChatbot";
 
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ welcome?: string }> }) {
   const params = await searchParams;
@@ -68,7 +68,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
   return (
     <Shell>
-      <StudentChatbot />
+      <LazyStudentChatbot />
       <Reveal className="hero-dashboard-intro">
       <div className="page-title">
         <div>

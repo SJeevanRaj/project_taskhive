@@ -33,6 +33,8 @@ export default function NotificationCenter({ userRole }: NotificationCenterProps
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
+    let idleCallback: number | undefined;
+    let initialRefreshTimer: ReturnType<typeof setTimeout> | undefined;
     const refresh = () => {
       if (!document.hidden) void fetchNotifications();
     };
@@ -46,7 +48,11 @@ export default function NotificationCenter({ userRole }: NotificationCenterProps
       interval = undefined;
     };
 
-    startPolling();
+    if ("requestIdleCallback" in window) {
+      idleCallback = window.requestIdleCallback(startPolling, { timeout: 2000 });
+    } else {
+      initialRefreshTimer = setTimeout(startPolling, 1000);
+    }
     const handleVisibilityChange = () => {
       if (document.hidden) stopPolling();
       else startPolling();
@@ -54,6 +60,8 @@ export default function NotificationCenter({ userRole }: NotificationCenterProps
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       stopPolling();
+      if (idleCallback !== undefined) window.cancelIdleCallback(idleCallback);
+      if (initialRefreshTimer) clearTimeout(initialRefreshTimer);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
