@@ -9,15 +9,16 @@ export default async function Jobs({ searchParams }: { searchParams: Promise<{ q
   const u = await currentUser();
   if (!u) redirect("/login");
 
-  const jobs = await db.job.findMany({
-    include: { recruiter: true },
-    orderBy: { createdAt: "desc" }
-  });
-
-  const apps = await db.application.findMany({
-    where: { userId: u.id },
-    select: { jobId: true }
-  });
+  const [jobs, apps] = await Promise.all([
+    db.job.findMany({
+      include: { recruiter: { select: { companyName: true } } },
+      orderBy: { createdAt: "desc" }
+    }),
+    db.application.findMany({
+      where: { userId: u.id },
+      select: { jobId: true }
+    })
+  ]);
 
   const appliedIds = new Set(apps.map((a) => a.jobId));
 

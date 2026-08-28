@@ -9,30 +9,40 @@ export async function GET() {
   }
 
   try {
-    const notifications = await db.notification.findMany({
-      where: { userId: u.id },
-      orderBy: { createdAt: "desc" },
-      take: 30
-    });
-
-    const unreadCount = await db.notification.count({
-      where: { userId: u.id, read: false }
-    });
-
-    // Also fetch active pending invitations for student
-    let pendingInvitations: any[] = [];
-    if (u.role === "STUDENT") {
-      pendingInvitations = await db.invitation.findMany({
-        where: { studentId: u.id, status: "PENDING" },
-        include: {
-          recruiter: {
-            include: { user: { select: { name: true, email: true, phone: true } } }
-          },
-          job: true
-        },
-        orderBy: { createdAt: "desc" }
-      });
-    }
+    const [notifications, unreadCount, pendingInvitations] = await Promise.all([
+      db.notification.findMany({
+        where: { userId: u.id },
+        orderBy: { createdAt: "desc" },
+        take: 30,
+        select: {
+          id: true,
+          title: true,
+          message: true,
+          type: true,
+          link: true,
+          read: true,
+          metadata: true,
+          createdAt: true
+        }
+      }),
+      db.notification.count({ where: { userId: u.id, read: false } }),
+      u.role === "STUDENT"
+        ? db.invitation.findMany({
+            where: { studentId: u.id, status: "PENDING" },
+            include: {
+              recruiter: {
+                select: {
+                  companyName: true,
+                  companyId: true,
+                  user: { select: { name: true, email: true } }
+                }
+              },
+              job: { select: { title: true } }
+            },
+            orderBy: { createdAt: "desc" }
+          })
+        : Promise.resolve([])
+    ]);
 
     return NextResponse.json({
       notifications: notifications.map((n) => ({

@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
+import { cache } from "react";
 import { db } from "./db";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || "dev-secret-change-me");
@@ -35,7 +36,7 @@ export async function getSession() {
 
 import { ensureUserIds } from "./ids";
 
-export async function currentUser() {
+export const currentUser = cache(async () => {
   const session = await getSession();
   if (!session) return null;
   const user = await db.user.findUnique({
@@ -43,7 +44,7 @@ export async function currentUser() {
     include: { recruiter: true }
   });
   return await ensureUserIds(user);
-}
+});
 
 export async function logout() {
   const jar = await cookies();

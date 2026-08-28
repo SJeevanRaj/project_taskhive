@@ -14,37 +14,38 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   if (!user) redirect("/login");
   if (user.role === "RECRUITER") redirect("/recruiter?tab=overview");
 
-  const attempts = await db.assessmentAttempt.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-    include: { assessment: true }
-  });
-
-  const taskSubmissions = await db.taskSubmission.findMany({
-    where: { userId: user.id, status: "COMPLETED" },
-    include: { task: true }
-  });
-
-  const totalTasks = await db.task.count();
-  const totalAssessments = await db.assessment.count();
-  const certificatesCount = await db.certificate.count({ where: { userId: user.id } });
-  const mockInterviews = await db.mockInterview.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 10 });
+  const [attempts, taskSubmissions, totalTasks, totalAssessments, certificatesCount, mockInterviews, jobs, userApplications, connectionCount, newConnectionRequests, recruiterCount] = await Promise.all([
+    db.assessmentAttempt.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      include: { assessment: { select: { title: true } } }
+    }),
+    db.taskSubmission.findMany({
+      where: { userId: user.id, status: "COMPLETED" },
+      include: { task: { select: { title: true, category: true, slug: true } } }
+    }),
+    db.task.count(),
+    db.assessment.count(),
+    db.certificate.count({ where: { userId: user.id } }),
+    db.mockInterview.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: { score: true }
+    }),
+    db.job.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      include: { recruiter: { select: { companyName: true } } }
+    }),
+    db.application.findMany({ where: { userId: user.id }, select: { jobId: true } }),
+    db.recruiterConnection.count({ where: { studentId: user.id, status: { in: ["CONNECTED", "ACCEPTED"] } } }),
+    db.recruiterConnection.count({ where: { studentId: user.id, status: "PENDING" } }),
+    db.recruiter.count({ where: { jobs: { some: {} } } })
+  ]);
   const interviewScores = mockInterviews.map((interview) => interview.score);
   const bestInterviewScore = interviewScores.length ? Math.max(...interviewScores) : 0;
-
-  const jobs = await db.job.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 8,
-    include: { recruiter: true }
-  });
-
-  const userApplications = await db.application.findMany({
-    where: { userId: user.id }
-  });
   const appliedJobIds = new Set(userApplications.map((a) => a.jobId));
-  const connectionCount = await db.recruiterConnection.count({ where: { studentId: user.id, status: { in: ["CONNECTED", "ACCEPTED"] } } });
-  const newConnectionRequests = await db.recruiterConnection.count({ where: { studentId: user.id, status: "PENDING" } });
-  const recruiterCount = await db.recruiter.count({ where: { jobs: { some: {} } } });
 
   const avgScore = attempts.length
     ? Math.round(attempts.reduce((a, b) => a + b.score, 0) / attempts.length)

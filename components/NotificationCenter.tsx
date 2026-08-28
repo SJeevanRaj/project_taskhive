@@ -32,9 +32,30 @@ export default function NotificationCenter({ userRole }: NotificationCenterProps
   }
 
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 15000); // 15s polling
-    return () => clearInterval(interval);
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const refresh = () => {
+      if (!document.hidden) void fetchNotifications();
+    };
+    const startPolling = () => {
+      if (document.hidden || interval) return;
+      void fetchNotifications();
+      interval = setInterval(refresh, 15000);
+    };
+    const stopPolling = () => {
+      if (interval) clearInterval(interval);
+      interval = undefined;
+    };
+
+    startPolling();
+    const handleVisibilityChange = () => {
+      if (document.hidden) stopPolling();
+      else startPolling();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   // Close when clicking outside
