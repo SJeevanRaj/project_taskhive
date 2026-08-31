@@ -14,37 +14,18 @@ export default function JobsClient({
   initialQuery?: string;
 }) {
   const opportunityImages = [
-    "https://images.unsplash.com/photo-1677442d019e21780ecad9e7b13eae9d43853a8ef3f359bb75fc0b1a846a1b2e?auto=format&fit=crop&w=900&q=80", // AI/ML
-    "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80", // Data Science
-    "https://images.unsplash.com/photo-1516321318423-f06f70d504d0?auto=format&fit=crop&w=900&q=80", // Laptop/Code
-    "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=900&q=80", // Frontend Dev
-    "https://images.unsplash.com/photo-1559056199-641a0ac8b3f4?auto=format&fit=crop&w=900&q=80", // Web Dev
-    "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80", // UI Design
-    "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=900&q=80", // Backend
-    "https://images.unsplash.com/photo-1548092372-56151907ceea?auto=format&fit=crop&w=900&q=80", // Server
-    "https://images.unsplash.com/photo-1518048996046-a9f99346f36d?auto=format&fit=crop&w=900&q=80", // Technology
-    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=900&q=80", // Cloud
-    "https://images.unsplash.com/photo-1639762681033-6461a0b80e0d?auto=format&fit=crop&w=900&q=80", // DevOps
-    "https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=900&q=80", // Infrastructure
-    "https://images.unsplash.com/photo-1526374965328-7f5ae4e8b04b?auto=format&fit=crop&w=900&q=80", // Mobile
-    "https://images.unsplash.com/photo-1609042231299-d9745701ca89?auto=format&fit=crop&w=900&q=80", // Flutter
-    "https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?auto=format&fit=crop&w=900&q=80", // Security
-    "https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&w=900&q=80", // Cybersecurity
-    "https://images.unsplash.com/photo-1565043666747-69f6646db940?auto=format&fit=crop&w=900&q=80", // Mechanical
-    "https://images.unsplash.com/photo-1581092162562-40038f56386d?auto=format&fit=crop&w=900&q=80", // Engineering
-    "https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=900&q=80", // Electrical
-    "https://images.unsplash.com/photo-1572365992253-3cb3e56dd362?auto=format&fit=crop&w=900&q=80", // Electronics
-    "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=900&q=80", // Construction
-    "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=900&q=80", // Building
-    "https://images.unsplash.com/photo-1460925895917-adf4ee868993?auto=format&fit=crop&w=900&q=80", // Analytics
-    "https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=900&q=80", // Database
-    "https://images.unsplash.com/photo-1516534775068-bb55e3360633?auto=format&fit=crop&w=900&q=80", // Testing
-    "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=900&q=80", // Business
-    "https://images.unsplash.com/photo-1517694712206-547b4b9b0537?auto=format&fit=crop&w=900&q=80"  // Java Dev
+    "https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&w=900&q=80",
+    "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=900&q=80",
+    "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=900&q=80",
+    "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=900&q=80",
+    "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=900&q=80"
   ];
   const [q, setQ] = useState(initialQuery);
   const [type, setType] = useState("ALL");
   const [statusMsg, setStatusMsg] = useState("");
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(
+    () => new Set(jobs.filter((job) => job.applied).map((job) => job.id))
+  );
 
   const calculateMatch = (required: string) => {
     const req = required.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
@@ -80,8 +61,8 @@ export default function JobsClient({
       });
       const d = await r.json();
       if (r.ok) {
+        setAppliedJobIds((previous) => new Set(previous).add(id));
         setStatusMsg("Application submitted successfully! Tracking in your Applications tab.");
-        setTimeout(() => location.reload(), 800);
       } else {
         setStatusMsg(d.error || "Unable to apply. You might have already applied.");
       }
@@ -129,7 +110,7 @@ export default function JobsClient({
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
-                borderColor: j.applied ? "#10b981" : "#1d3048"
+                  borderColor: j.applied || appliedJobIds.has(j.id) ? "#10b981" : "#1d3048"
               }}
             >
               <img
@@ -198,14 +179,14 @@ export default function JobsClient({
                 <button
                   type="button"
                   className="btn primary"
-                  disabled={j.applied}
+                  disabled={j.applied || appliedJobIds.has(j.id)}
                   onClick={() => apply(j.id)}
                   style={{
                     width: "100%",
                       background: "#c9a66b"
                   }}
                 >
-                  {j.applied ? "Application Submitted ✓" : "Apply to Opportunity 🚀"}
+                  {j.applied || appliedJobIds.has(j.id) ? "Application Submitted ✓" : "Apply to Opportunity 🚀"}
                 </button>
               </div>
             </div>

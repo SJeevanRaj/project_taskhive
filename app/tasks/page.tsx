@@ -9,13 +9,10 @@ export default async function TasksPage() {
   const user = await currentUser();
   if (!user) redirect("/login");
 
-  const tasks = await db.task.findMany({
-    orderBy: { points: "asc" }
-  });
-
-  const submissions = await db.taskSubmission.findMany({
-    where: { userId: user.id }
-  });
+  const [tasks, submissions] = await Promise.all([
+    db.task.findMany({ orderBy: { points: "asc" } }),
+    db.taskSubmission.findMany({ where: { userId: user.id } })
+  ]);
 
   const subMap = new Map(submissions.map((s) => [s.taskId, s]));
 

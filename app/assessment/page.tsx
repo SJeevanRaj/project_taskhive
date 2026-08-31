@@ -14,18 +14,17 @@ export default async function AssessmentPage({ searchParams }: { searchParams: P
   const { subscription } = await requireStudentSubscription();
   const remainingTests = await getRemainingTests(user.id, subscription);
 
-  const assessments = await db.assessment.findMany({
-    include: {
-      _count: { select: { questions: true } }
-    },
-    orderBy: { course: "asc" }
-  });
-
-  const attempts = await db.assessmentAttempt.findMany({
-    where: { userId: user.id },
-    include: { assessment: true, certificate: true },
-    orderBy: { createdAt: "desc" }
-  });
+  const [assessments, attempts] = await Promise.all([
+    db.assessment.findMany({
+      include: { _count: { select: { questions: true } } },
+      orderBy: { course: "asc" }
+    }),
+    db.assessmentAttempt.findMany({
+      where: { userId: user.id },
+      include: { assessment: true, certificate: true },
+      orderBy: { createdAt: "desc" }
+    })
+  ]);
 
   // Calculate best score per assessment
   const bestScoreMap = new Map<string, { score: number; skillLevel: string; cert: boolean }>();

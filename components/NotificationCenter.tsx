@@ -32,9 +32,38 @@ export default function NotificationCenter({ userRole }: NotificationCenterProps
   }
 
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 15000); // 15s polling
-    return () => clearInterval(interval);
+    let interval: ReturnType<typeof setInterval> | undefined;
+    let idleCallback: number | undefined;
+    let initialRefreshTimer: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
+      if (!document.hidden) void fetchNotifications();
+    };
+    const startPolling = () => {
+      if (document.hidden || interval) return;
+      void fetchNotifications();
+      interval = setInterval(refresh, 15000);
+    };
+    const stopPolling = () => {
+      if (interval) clearInterval(interval);
+      interval = undefined;
+    };
+
+    if ("requestIdleCallback" in window) {
+      idleCallback = window.requestIdleCallback(startPolling, { timeout: 2000 });
+    } else {
+      initialRefreshTimer = setTimeout(startPolling, 1000);
+    }
+    const handleVisibilityChange = () => {
+      if (document.hidden) stopPolling();
+      else startPolling();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      stopPolling();
+      if (idleCallback !== undefined) window.cancelIdleCallback(idleCallback);
+      if (initialRefreshTimer) clearTimeout(initialRefreshTimer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   // Close when clicking outside

@@ -133,7 +133,8 @@ export default async function SearchPage({
 
     const jobs = await db.job.findMany({
       where: { recruiterId: user.recruiter.id },
-      select: { id: true, title: true, type: true, location: true }
+      select: { id: true, title: true, type: true, location: true },
+      orderBy: { createdAt: "desc" }
     });
     recruiterJobs = jobs;
   }
