@@ -78,6 +78,7 @@ interface RecruiterClientProps {
   };
   jobs: any[];
   talentPool: any[];
+  leaderboard: any[];
 }
 
 export default function RecruiterClient({
@@ -87,7 +88,8 @@ export default function RecruiterClient({
   recruiter,
   user,
   jobs: initialJobs,
-  talentPool
+  talentPool,
+  leaderboard
 }: RecruiterClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -715,6 +717,7 @@ export default function RecruiterClient({
           </div>
           <h1>
             {tab === "overview" && "Recruiter Command Center 🏢"}
+            {tab === "leaderboard" && "Campus Leaderboard & Talent Rankings 🏆"}
             {tab === "jobs" && "Manage Job Opportunities 💼"}
             {tab === "candidates" && "Candidate Pipeline & Screening 👥"}
             {tab === "applications" && "All Applications Tracker 📋"}
@@ -726,6 +729,107 @@ export default function RecruiterClient({
           </h1>
         </div>
       </div>
+
+      {tab === "leaderboard" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          {leaderboard.length >= 3 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
+              <div className="card" style={{ textAlign: "center", borderColor: "#94a3b8", background: "#eee3d0" }}>
+                <div style={{ fontSize: 32, marginBottom: 4 }}>🥈</div>
+                <span className="tag" style={{ background: "#e5d7c0", color: "#52605b" }}>Rank #2</span>
+                <h3 style={{ margin: "10px 0 4px", fontSize: 17 }}>{leaderboard[1].name}</h3>
+                <p className="muted" style={{ fontSize: 12, margin: "0 0 10px" }}>{leaderboard[1].branch}</p>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#94a3b8" }}>{leaderboard[1].overallRating} rating</div>
+                <small className="muted">{leaderboard[1].avgScore}% avg • {leaderboard[1].taskCount} tasks</small>
+              </div>
+
+              <div className="card" style={{ textAlign: "center", borderColor: "#fbbf24", background: "#eee3d0", transform: "translateY(-6px)" }}>
+                <div style={{ fontSize: 36, marginBottom: 4 }}>👑 🥇</div>
+                <span className="tag" style={{ background: "#e5d7c0", color: "#806326", fontWeight: 700 }}>Rank #1 Champion</span>
+                <h3 style={{ margin: "10px 0 4px", fontSize: 19 }}>{leaderboard[0].name}</h3>
+                <p className="muted" style={{ fontSize: 12, margin: "0 0 10px" }}>{leaderboard[0].branch}</p>
+                <div style={{ fontSize: 28, fontWeight: 800, color: "#fbbf24" }}>{leaderboard[0].overallRating} rating</div>
+                <small className="muted">{leaderboard[0].avgScore}% avg • {leaderboard[0].taskPts} task pts</small>
+              </div>
+
+              <div className="card" style={{ textAlign: "center", borderColor: "#b45309", background: "#eee3d0" }}>
+                <div style={{ fontSize: 32, marginBottom: 4 }}>🥉</div>
+                <span className="tag" style={{ background: "#e5d7c0", color: "#8a5e38" }}>Rank #3</span>
+                <h3 style={{ margin: "10px 0 4px", fontSize: 17 }}>{leaderboard[2].name}</h3>
+                <p className="muted" style={{ fontSize: 12, margin: "0 0 10px" }}>{leaderboard[2].branch}</p>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#fdba74" }}>{leaderboard[2].overallRating} rating</div>
+                <small className="muted">{leaderboard[2].avgScore}% avg • {leaderboard[2].taskCount} tasks</small>
+              </div>
+            </div>
+          )}
+
+          <section className="card" style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "60px 2fr 1.2fr 1fr 1fr 120px", padding: "14px 20px", background: "#eee3d0", borderBottom: "1px solid #d8cbb6", fontSize: 12, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>
+              <span>Rank</span>
+              <span>Student</span>
+              <span>College & Branch</span>
+              <span>Avg Score</span>
+              <span>Tasks & Pts</span>
+              <span style={{ textAlign: "right" }}>Rating Score</span>
+            </div>
+
+            {leaderboard.map((student, i) => (
+              <div
+                key={student.id}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "60px 2fr 1.2fr 1fr 1fr 120px",
+                  padding: "16px 20px",
+                  alignItems: "center",
+                  borderBottom: "1px solid #142236",
+                  background: student.id === user.id ? "rgba(124, 92, 255, 0.08)" : undefined
+                }}
+              >
+                <div style={{ fontSize: 16, fontWeight: 800, color: i === 0 ? "#fbbf24" : i === 1 ? "#94a3b8" : i === 2 ? "#fdba74" : "#64748b" }}>
+                  #{i + 1}
+                </div>
+
+                <div>
+                  <b style={{ fontSize: 15, color: student.id === user.id ? "#7c5cff" : "#fff" }}>
+                    {student.name} {student.id === user.id && <span className="tag" style={{ fontSize: 10 }}>You</span>}
+                  </b>
+                  <div style={{ fontSize: 12, color: "#64748b" }}>
+                    {student.certCount} certificate(s) unlocked
+                  </div>
+                </div>
+
+                <div style={{ fontSize: 13, color: "#94a3b8" }}>
+                  <div>{student.college}</div>
+                  <small style={{ color: "#64748b" }}>{student.branch}</small>
+                </div>
+
+                <div>
+                  <strong style={{ fontSize: 16, color: student.avgScore >= 80 ? "#34d399" : "#60a5fa" }}>
+                    {student.avgScore}%
+                  </strong>
+                  <div style={{ fontSize: 11, color: "#64748b" }}>{student.testCount} test(s)</div>
+                </div>
+
+                <div>
+                  <strong style={{ fontSize: 14, color: "#a78bfa" }}>
+                    {student.taskCount} tasks
+                  </strong>
+                  <div style={{ fontSize: 11, color: "#38bdf8" }}>+{student.taskPts} pts</div>
+                </div>
+
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#38bdf8" }}>
+                    {student.overallRating}
+                  </div>
+                  <div className="bar" style={{ height: 4, marginTop: 4 }}>
+                    <i style={{ width: `${Math.min(student.overallRating, 100)}%` }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </section>
+        </div>
+      )}
 
       {/* TAB 1: OVERVIEW / RECRUITER DASHBOARD */}
       {tab === "overview" && (

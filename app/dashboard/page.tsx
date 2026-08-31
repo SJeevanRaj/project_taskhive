@@ -69,7 +69,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <Reveal className="hero-dashboard-intro">
       <div className="page-title">
         <div>
-          <h1>{params.welcome === "new" ? "Welcome" : "Welcome back"}, {user.name.split(" ")[0]} 👋</h1>
+          <h1>{params.welcome === "new" ? "Welcome" : "Welcome back"}, {user.name} 👋</h1>
           <p className="muted">
             Build your profile, explore opportunities, and prepare for your next career move.
           </p>
