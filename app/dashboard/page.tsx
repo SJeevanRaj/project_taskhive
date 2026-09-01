@@ -6,7 +6,7 @@ import Link from "next/link";
 import { matchJob } from "@/lib/ai";
 import { Search } from "lucide-react";
 import Reveal from "@/components/Reveal";
-import LazyStudentChatbot from "@/components/LazyStudentChatbot";
+import StudentChatbot from "@/components/StudentChatbot";
 
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ welcome?: string }> }) {
   const params = await searchParams;
@@ -14,44 +14,41 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   if (!user) redirect("/login");
   if (user.role === "RECRUITER") redirect("/recruiter?tab=overview");
 
-  const [attemptStats, latestAttempt, taskSubmissions, totalTasks, certificatesCount, mockInterviews, jobs, userApplications, connectionCount, newConnectionRequests, recruiterCount] = await Promise.all([
-    db.assessmentAttempt.aggregate({
-      where: { userId: user.id },
-      _avg: { score: true },
-      _count: { _all: true }
-    }),
-    db.assessmentAttempt.findFirst({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-      include: { assessment: { select: { title: true } } }
-    }),
-    db.taskSubmission.findMany({
-      where: { userId: user.id, status: "COMPLETED" },
-      include: { task: { select: { title: true, category: true, slug: true } } }
-    }),
-    db.task.count(),
-    db.certificate.count({ where: { userId: user.id } }),
-    db.mockInterview.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      select: { score: true }
-    }),
-    db.job.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 8,
-      include: { recruiter: { select: { companyName: true } } }
-    }),
-    db.application.findMany({ where: { userId: user.id }, select: { jobId: true } }),
-    db.recruiterConnection.count({ where: { studentId: user.id, status: { in: ["CONNECTED", "ACCEPTED"] } } }),
-    db.recruiterConnection.count({ where: { studentId: user.id, status: "PENDING" } }),
-    db.recruiter.count({ where: { jobs: { some: {} } } })
-  ]);
+  const attempts = await db.assessmentAttempt.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+    include: { assessment: true }
+  });
+
+  const taskSubmissions = await db.taskSubmission.findMany({
+    where: { userId: user.id, status: "COMPLETED" },
+    include: { task: true }
+  });
+
+  const totalTasks = await db.task.count();
+  const totalAssessments = await db.assessment.count();
+  const certificatesCount = await db.certificate.count({ where: { userId: user.id } });
+  const mockInterviews = await db.mockInterview.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 10 });
   const interviewScores = mockInterviews.map((interview) => interview.score);
   const bestInterviewScore = interviewScores.length ? Math.max(...interviewScores) : 0;
-  const appliedJobIds = new Set(userApplications.map((a) => a.jobId));
 
-  const avgScore = Math.round(attemptStats._avg.score || 0);
+  const jobs = await db.job.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 8,
+    include: { recruiter: true }
+  });
+
+  const userApplications = await db.application.findMany({
+    where: { userId: user.id }
+  });
+  const appliedJobIds = new Set(userApplications.map((a) => a.jobId));
+  const connectionCount = await db.recruiterConnection.count({ where: { studentId: user.id, status: { in: ["CONNECTED", "ACCEPTED"] } } });
+  const newConnectionRequests = await db.recruiterConnection.count({ where: { studentId: user.id, status: "PENDING" } });
+  const recruiterCount = await db.recruiter.count({ where: { jobs: { some: {} } } });
+
+  const avgScore = attempts.length
+    ? Math.round(attempts.reduce((a, b) => a + b.score, 0) / attempts.length)
+    : 0;
 
   const totalTaskPoints = taskSubmissions.reduce((sum, s) => sum + s.score, 0);
 
@@ -68,11 +65,11 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
   return (
     <Shell>
-      <LazyStudentChatbot />
+      <StudentChatbot />
       <Reveal className="hero-dashboard-intro">
       <div className="page-title">
         <div>
-          <h1>{params.welcome === "new" ? "Welcome" : "Welcome back"}, {user.name.split(" ")[0]} 👋</h1>
+          <h1>{params.welcome === "new" ? "Welcome" : "Welcome back"}, {user.name} 👋</h1>
           <p className="muted">
             Build your profile, explore opportunities, and prepare for your next career move.
           </p>
@@ -160,40 +157,40 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <section className="card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
               <h3 style={{ margin: 0 }}>Latest AI Skill Diagnostics</h3>
-              {latestAttempt && (
+              {attempts[0] && (
                 <span className="tag" style={{ background: "#e5d7c0", color: "#40504b" }}>
-                  {latestAttempt.skillLevel} Level
+                  {attempts[0].skillLevel} Level
                 </span>
               )}
             </div>
 
-            {latestAttempt ? (
+            {attempts[0] ? (
               <>
                 <p style={{ margin: "0 0 14px", fontSize: 14 }}>
-                  <b>{latestAttempt.assessment.title}</b> • Assessed on {latestAttempt.createdAt.toLocaleDateString()}
+                  <b>{attempts[0].assessment.title}</b> • Assessed on {attempts[0].createdAt.toLocaleDateString()}
                 </p>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 14, margin: "14px 0", background: "linear-gradient(135deg, #eef2ff, #ecfeff)", padding: 16, borderRadius: 12, border: "1px solid #c7d2fe" }}>
                   <div>
                     <small className="muted">Assessed Score</small>
-                    <div style={{ fontSize: 36, fontWeight: 800, color: latestAttempt.score > 80 ? "#34d399" : "#60a5fa" }}>
-                      {latestAttempt.score}%
+                    <div style={{ fontSize: 36, fontWeight: 800, color: attempts[0].score > 80 ? "#34d399" : "#60a5fa" }}>
+                      {attempts[0].score}%
                     </div>
                   </div>
                   <div>
                     <small className="muted">Next Recommended Step</small>
                     <p style={{ margin: "4px 0 0", fontSize: 13, color: "#475569", lineHeight: 1.5 }}>
-                      {latestAttempt.recommendations}
+                      {attempts[0].recommendations}
                     </p>
                   </div>
                 </div>
 
                 <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                  <Link className="btn secondary" href={`/assessment/result/${latestAttempt.id}`} style={{ fontSize: 13 }}>
+                  <Link className="btn secondary" href={`/assessment/result/${attempts[0].id}`} style={{ fontSize: 13 }}>
                     View Full Diagnostic
                   </Link>
-                  {latestAttempt.score > 80 && (
-                    <Link className="btn primary" href={`/certificate/${latestAttempt.id}`} style={{ fontSize: 13 }}>
+                  {attempts[0].score > 80 && (
+                    <Link className="btn primary" href={`/certificate/${attempts[0].id}`} style={{ fontSize: 13 }}>
                       🎓 View Certificate
                     </Link>
                   )}

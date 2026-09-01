@@ -1,6 +1,5 @@
 import { currentUser } from "@/lib/auth";
 import SidebarNav, { SidebarItem } from "./SidebarNav";
-import MobileNav from "./MobileNav";
 
 export default async function Sidebar() {
   const user = await currentUser();
@@ -16,8 +15,8 @@ export default async function Sidebar() {
     ] },
     { title: "Insights", items: [
       { label: "Hiring Analytics", href: "/recruiter?tab=analytics", icon: "analytics" },
-      { label: "Talent Pool", href: "/recruiter?tab=talent", icon: "user" },
-      { label: "Student Leaderboard", href: "/recruiter?tab=leaderboard", icon: "trophy" }
+      { label: "Leaderboard", href: "/recruiter?tab=leaderboard", icon: "trophy" },
+      { label: "Talent Pool", href: "/recruiter?tab=talent", icon: "user" }
     ] },
     { title: "Company", items: [
       { label: "Company Profile", href: "/recruiter?tab=company", icon: "building" }
@@ -37,15 +36,12 @@ export default async function Sidebar() {
     ] }
   ];
   return (
-    <>
-      <MobileNav sections={sections} />
-      <aside className="sidebar">
+    <aside className="sidebar">
       <div className="sidebar-brand">
         <img className="sidebar-brand-logo" src="/hirelytix-logo.svg" alt="HireLytix" width={34} height={34} />
         <span>HireLytix <em>{isRecruiter ? "Recruiter" : ""}</em></span>
       </div>
       <SidebarNav sections={sections} />
-      </aside>
-    </>
+    </aside>
   );
 }

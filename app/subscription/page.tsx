@@ -20,7 +20,7 @@ export default async function SubscriptionPage() {
   if (existing?.plan === "PRO" && existing.status === "ACTIVE") redirect("/dashboard");
 
   return <main className="subscription-page">
-    <header className="subscription-header"><Link href="/" className="brand">HIRELYTIX</Link><span>Welcome, {user.name.split(" ")[0]}</span></header>
+    <header className="subscription-header"><Link href="/" className="brand">HIRELYTIX</Link><span>Welcome, {user.name}</span></header>
     <section className="subscription-hero"><span className="banner-kicker">Choose your path</span><h1>Unlock your career momentum.</h1><p className="muted">Pick a plan to enter your student dashboard. You can upgrade from Basic whenever you need more room to grow.</p></section>
     <section className="pricing-grid">
       <form action={chooseBasic} className="pricing-card"><span className="plan-label">STARTER</span><h2>Basic</h2><div className="price">Free</div><p className="muted">A focused starting point for building your profile.</p><button className="btn secondary" type="submit">Continue with Basic</button><ul><li>2 skill tests</li><li>Limited courses and basic analytics</li><li>Normal-priority applications</li><li>Profile, resume, jobs and notifications</li></ul></form>

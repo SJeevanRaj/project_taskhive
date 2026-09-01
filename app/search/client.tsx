@@ -57,6 +57,7 @@ export default function SearchClient({
 
   // Invitation Modal State for Recruiters
   const [inviteModalStudent, setInviteModalStudent] = useState<any | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<string>(recruiterJobs[0]?.id || "");
   const [inviteMessage, setInviteMessage] = useState(
     "We reviewed your verified technical credentials and would love to invite you to connect!"
@@ -655,8 +656,8 @@ export default function SearchClient({
                     </div>
 
                     {/* Bottom Actions */}
-                    <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ display: "flex", gap: 10, fontSize: 11 }}>
+                    <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", gap: 10, fontSize: 11, flexWrap: "wrap" }}>
                         {student.portfolio && (
                           <a href={student.portfolio} target="_blank" rel="noreferrer" style={{ color: "var(--indigo)", fontWeight: 700 }}>
                             Portfolio ↗
@@ -674,18 +675,29 @@ export default function SearchClient({
                         )}
                       </div>
 
-                      {student.hasResume ? <ResumeViewer studentId={student.id} studentName={student.name} /> : <span className="muted" style={{ fontSize: 11 }}>Resume Not Added</span>}
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                        {student.hasResume ? <ResumeViewer studentId={student.id} studentName={student.name} /> : <span className="muted" style={{ fontSize: 11 }}>Resume Not Added</span>}
 
-                      <button
-                        type="button"
-                        className="btn primary"
-                        disabled={isInvited}
-                        onClick={() => setInviteModalStudent(student)}
-                        style={{ fontSize: 12, padding: "6px 14px" }}
-                      >
-                        <Send size={13} style={{ marginRight: 4 }} />
-                        {isInvited ? "Invitation Sent ✓" : "Invite to Company"}
-                      </button>
+                        <button
+                          type="button"
+                          className="btn secondary"
+                          onClick={() => setSelectedStudent(student)}
+                          style={{ fontSize: 12, padding: "6px 12px" }}
+                        >
+                          View Details
+                        </button>
+
+                        <button
+                          type="button"
+                          className="btn primary"
+                          disabled={isInvited}
+                          onClick={() => setInviteModalStudent(student)}
+                          style={{ fontSize: 12, padding: "6px 14px" }}
+                        >
+                          <Send size={13} style={{ marginRight: 4 }} />
+                          {isInvited ? "Invitation Sent ✓" : "Invite to Company"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -700,6 +712,123 @@ export default function SearchClient({
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* STUDENT PROFILE DETAILS MODAL */}
+      {selectedStudent && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.6)",
+            backdropFilter: "blur(4px)",
+            zIndex: 100,
+            display: "grid",
+            placeItems: "center",
+            padding: 20
+          }}
+        >
+          <div
+            className="card"
+            style={{
+              width: "min(760px, 94vw)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              padding: 24,
+              background: "#fff",
+              borderRadius: 18,
+              boxShadow: "0 25px 70px rgba(15,23,42,.25)"
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                  <h3 style={{ margin: 0, fontSize: 22 }}>{selectedStudent.name}</h3>
+                  <span className="tag" style={{ background: "var(--soft-indigo)", color: "var(--indigo)", fontWeight: 700 }}>
+                    {selectedStudent.studentId}
+                  </span>
+                </div>
+                <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+                  {selectedStudent.college || "University Scholar"} • {selectedStudent.degree || "B.Tech"} {selectedStudent.branch ? `• ${selectedStudent.branch}` : ""}
+                </p>
+              </div>
+              <button type="button" onClick={() => setSelectedStudent(null)} style={{ background: "transparent", border: 0, cursor: "pointer", color: "var(--muted)" }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
+              <div style={{ padding: 14, background: "var(--canvas)", borderRadius: 12, border: "1px solid var(--border)" }}>
+                <small className="muted" style={{ fontWeight: 700 }}>CONTACT</small>
+                <p style={{ margin: "6px 0 2px", fontSize: 14 }}>{selectedStudent.email}</p>
+                <p style={{ margin: 0, fontSize: 13, color: "var(--muted)" }}>{selectedStudent.phone || "Phone not provided"}</p>
+              </div>
+
+              <div style={{ padding: 14, background: "var(--canvas)", borderRadius: 12, border: "1px solid var(--border)" }}>
+                <small className="muted" style={{ fontWeight: 700 }}>PROFILE LINKS</small>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 6, fontSize: 12 }}>
+                  {selectedStudent.portfolio && <a href={selectedStudent.portfolio} target="_blank" rel="noreferrer" style={{ color: "var(--indigo)", fontWeight: 700 }}>Portfolio ↗</a>}
+                  {selectedStudent.github && <a href={`https://${selectedStudent.github.replace("https://", "")}`} target="_blank" rel="noreferrer" style={{ color: "var(--muted)" }}>GitHub ↗</a>}
+                  {selectedStudent.linkedin && <a href={`https://${selectedStudent.linkedin.replace("https://", "")}`} target="_blank" rel="noreferrer" style={{ color: "var(--muted)" }}>LinkedIn ↗</a>}
+                  {!selectedStudent.portfolio && !selectedStudent.github && !selectedStudent.linkedin && <span style={{ color: "var(--muted)" }}>No links added</span>}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <small className="muted" style={{ fontWeight: 700 }}>SKILLS</small>
+              <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--text)" }}>
+                {selectedStudent.skills || "Not provided"}
+              </p>
+            </div>
+
+            {selectedStudent.bio && (
+              <div style={{ marginBottom: 18 }}>
+                <small className="muted" style={{ fontWeight: 700 }}>BIO / ABOUT</small>
+                <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--text)", lineHeight: 1.6 }}>
+                  {selectedStudent.bio}
+                </p>
+              </div>
+            )}
+
+            <div style={{ marginBottom: 18 }}>
+              <small className="muted" style={{ fontWeight: 700 }}>VERIFIED CERTIFICATES</small>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                {selectedStudent.certificates?.length > 0 ? selectedStudent.certificates.map((c: any) => (
+                  <span key={c.certificateNo} className="tag" style={{ background: "#ECFDF5", color: "#047857", border: "1px solid #A7F3D0" }}>
+                    🏆 {c.assessmentTitle} • {c.score}%
+                  </span>
+                )) : <span style={{ fontSize: 12, color: "var(--muted)" }}>No certificates yet.</span>}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <small className="muted" style={{ fontWeight: 700 }}>PRACTICAL TASKS</small>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                {selectedStudent.completedTasks?.length > 0 ? selectedStudent.completedTasks.map((task: any, index: number) => (
+                  <span key={`${task.title}-${index}`} className="tag" style={{ background: "var(--soft-indigo)", color: "var(--indigo)" }}>
+                    ⚡ {task.title} • {task.score} pts
+                  </span>
+                )) : <span style={{ fontSize: 12, color: "var(--muted)" }}>No completed tasks yet.</span>}
+              </div>
+            </div>
+
+            {selectedStudent.hasResume && (
+              <div style={{ marginBottom: 8 }}>
+                <ResumeViewer studentId={selectedStudent.id} studentName={selectedStudent.name} />
+              </div>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 18 }}>
+              <button type="button" className="btn secondary" onClick={() => setSelectedStudent(null)}>
+                Close
+              </button>
+              <button type="button" className="btn primary" onClick={() => { setSelectedStudent(null); setInviteModalStudent(selectedStudent); }}>
+                <Send size={13} style={{ marginRight: 4 }} /> Invite to Company
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -7,7 +7,7 @@ function localAnswer(question: string, context: { name: string; skills: string; 
   const focus = context.skills || "your current skills";
   const recent = context.attempts[0] || "a skill assessment";
 
-  if (/hello|hi|hey|good morning|good evening/.test(text)) return `Hi ${context.name.split(" ")[0]}! I’m ready to help with programming, courses, assessments, projects, jobs, resumes, or interview preparation. What are you working on?`;
+  if (/hello|hi|hey|good morning|good evening/.test(text)) return `Hi ${context.name}! I’m ready to help with programming, courses, assessments, projects, jobs, resumes, or interview preparation. What are you working on?`;
   if (/(java|javascript|python|c\+\+|c#).*(hello world|hello word)|(hello world|hello word).*(java|javascript|python|c\+\+|c#)/.test(text)) {
     if (text.includes("java") && !text.includes("javascript")) {
       return "Here is a Java Hello World program:\n\n```java\npublic class HelloWorld {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, World!\");\n    }\n}\n```\n\nSave it as `HelloWorld.java`, compile with `javac HelloWorld.java`, and run it with `java HelloWorld`.";

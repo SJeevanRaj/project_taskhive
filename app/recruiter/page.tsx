@@ -69,44 +69,76 @@ export default async function Recruiter({
     // Keep defaults
   }
 
-  const [jobs, talentStudents] = await Promise.all([
-    db.job.findMany({
-      where: { recruiterId: recruiter.id },
-      include: {
-        applications: {
-          include: {
-            user: {
-              include: {
-                certificates: {
-                  include: { attempt: { include: { assessment: true } } }
-                },
-                taskSubmissions: {
-                  where: { status: "COMPLETED" },
-                  include: { task: true }
-                }
+  const jobs = await db.job.findMany({
+    where: { recruiterId: recruiter.id },
+    include: {
+      applications: {
+        include: {
+          user: {
+            include: {
+              certificates: {
+                include: { attempt: { include: { assessment: true } } }
+              },
+              taskSubmissions: {
+                where: { status: "COMPLETED" },
+                include: { task: true }
               }
             }
-          },
-          orderBy: { createdAt: "desc" }
-        }
-      },
-      orderBy: { createdAt: "desc" }
-    }),
-    db.user.findMany({
-      where: { role: "STUDENT" },
-      include: {
-        certificates: {
-          include: { attempt: { include: { assessment: true } } }
+          }
         },
-        taskSubmissions: {
-          where: { status: "COMPLETED" },
-          include: { task: true }
-        }
+        orderBy: { createdAt: "desc" }
+      }
+    },
+    orderBy: { createdAt: "desc" }
+  });
+
+  const talentStudents = await db.user.findMany({
+    where: { role: "STUDENT" },
+    include: {
+      certificates: {
+        include: { attempt: { include: { assessment: true } } }
       },
-      take: 50,
-      orderBy: { createdAt: "desc" }
+      taskSubmissions: {
+        where: { status: "COMPLETED" },
+        include: { task: true }
+      }
+    },
+    take: 50,
+    orderBy: { createdAt: "desc" }
+  });
+
+  const leaderboardStudents = await db.user.findMany({
+    where: { role: "STUDENT" },
+    include: {
+      attempts: true,
+      taskSubmissions: { where: { status: "COMPLETED" } },
+      certificates: true
+    },
+    orderBy: { createdAt: "asc" }
+  });
+
+  const serializedLeaderboard = leaderboardStudents
+    .map((s) => {
+      const avgScore = s.attempts.length
+        ? Math.round(s.attempts.reduce((a, b) => a + b.score, 0) / s.attempts.length)
+        : 0;
+      const taskPts = s.taskSubmissions.reduce((sum, t) => sum + t.score, 0);
+      const overallRating = Math.round(avgScore * 0.6 + (taskPts / 10) * 0.4);
+
+      return {
+        id: s.id,
+        name: s.name,
+        college: s.college || "Campus Scholar",
+        branch: s.branch || "Engineering",
+        avgScore,
+        testCount: s.attempts.length,
+        taskCount: s.taskSubmissions.length,
+        taskPts,
+        certCount: s.certificates.length,
+        overallRating
+      };
     })
-  ]);
+    .sort((a, b) => b.overallRating - a.overallRating || b.avgScore - a.avgScore);
 
   const serializedJobs = jobs.map((j) => ({
     id: j.id,
@@ -186,41 +218,6 @@ export default async function Recruiter({
     taskPoints: s.taskSubmissions.reduce((sum, t) => sum + t.score, 0)
   }));
 
-  // Fetch all students with their scores for leaderboard
-  const allStudents = await db.user.findMany({
-    where: { role: "STUDENT" },
-    include: {
-      attempts: true,
-      taskSubmissions: { where: { status: "COMPLETED" } },
-      certificates: true
-    },
-    orderBy: { createdAt: "asc" }
-  });
-
-  const leaderboard = allStudents
-    .map((s) => {
-      const avgScore = s.attempts.length
-        ? Math.round(s.attempts.reduce((a, b) => a + b.score, 0) / s.attempts.length)
-        : 0;
-      const taskPts = s.taskSubmissions.reduce((sum, t) => sum + t.score, 0);
-      const overallRating = Math.round(avgScore * 0.6 + (taskPts / 10) * 0.4);
-
-      return {
-        id: s.id,
-        name: s.name || "Unknown",
-        email: s.email || "",
-        college: s.college || "Campus Scholar",
-        branch: s.branch || "Engineering",
-        avgScore: avgScore || 0,
-        testCount: s.attempts.length || 0,
-        taskCount: s.taskSubmissions.length || 0,
-        taskPts: taskPts || 0,
-        certCount: s.certificates.length || 0,
-        overallRating: overallRating || 0
-      };
-    })
-    .sort((a, b) => b.overallRating - a.overallRating || b.avgScore - a.avgScore);
-
   return (
     <Shell>
       <RecruiterClient
@@ -244,7 +241,7 @@ export default async function Recruiter({
         }}
         jobs={serializedJobs}
         talentPool={serializedTalent}
-        leaderboard={leaderboard}
+        leaderboard={serializedLeaderboard}
       />
     </Shell>
   );
