@@ -78,6 +78,7 @@ interface RecruiterClientProps {
   };
   jobs: any[];
   talentPool: any[];
+  leaderboard?: any[];
 }
 
 export default function RecruiterClient({
@@ -87,7 +88,8 @@ export default function RecruiterClient({
   recruiter,
   user,
   jobs: initialJobs,
-  talentPool
+  talentPool,
+  leaderboard = []
 }: RecruiterClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -194,6 +196,10 @@ export default function RecruiterClient({
   const [talentOnlyCertified, setTalentOnlyCertified] = useState(false);
   const [invitedCandidateId, setInvitedCandidateId] = useState<string | null>(null);
   const [inviteJobSelect, setInviteJobSelect] = useState(jobs[0]?.id || "");
+
+  // Leaderboard State
+  const [leaderboardSearch, setLeaderboardSearch] = useState("");
+  const [selectedLeaderboardStudent, setSelectedLeaderboardStudent] = useState<any | null>(null);
 
   // Calculate Match Score between Candidate skills and Job skills
   function calculateFit(requiredStr: string, candidateStr: string): number {
@@ -721,6 +727,7 @@ export default function RecruiterClient({
             {tab === "interviews" && "Interview Management Hub 📅"}
             {tab === "analytics" && "Hiring Analytics & Insights 📊"}
             {tab === "talent" && "Platform Talent Pool Discovery 🔍"}
+            {tab === "leaderboard" && "Student Leaderboard Rankings 🏆"}
             {tab === "company" && "Company Profile & Employer Brand 🏢"}
             {tab === "settings" && "Recruiter Settings Dashboard ⚙️"}
           </h1>
@@ -842,6 +849,14 @@ export default function RecruiterClient({
                     style={{ fontSize: 12, width: "100%", justifyContent: "flex-start" }}
                   >
                     <Search size={14} style={{ marginRight: 6 }} /> Discover Verified Talent ({talentPool.length})
+                  </button>
+                  <button
+                    type="button"
+                    className="btn secondary"
+                    onClick={() => switchTab("leaderboard")}
+                    style={{ fontSize: 12, width: "100%", justifyContent: "flex-start" }}
+                  >
+                    <Trophy size={14} style={{ marginRight: 6 }} /> View Campus Leaderboard ({leaderboard.length})
                   </button>
                   <button
                     type="button"
@@ -1841,7 +1856,251 @@ export default function RecruiterClient({
         </div>
       )}
 
-      {/* TAB 8: COMPANY PROFILE & EMPLOYER BRANDING */}
+      {/* TAB 8: STUDENT LEADERBOARD */}
+      {tab === "leaderboard" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Search Bar */}
+          <div className="card" style={{ padding: "16px 20px" }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: "200px", position: "relative" }}>
+                <input
+                  type="text"
+                  placeholder="Search by student name, college, or branch..."
+                  value={leaderboardSearch}
+                  onChange={(e) => setLeaderboardSearch(e.target.value)}
+                  style={{ paddingLeft: 32 }}
+                />
+                <Search size={15} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--muted)" }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Leaderboard Table */}
+          <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "60px 2fr 1.2fr 1fr 1fr 1fr 120px", padding: "14px 20px", background: "var(--soft-indigo)", borderBottom: "1px solid var(--border)", fontSize: 12, color: "var(--text)", fontWeight: 700, textTransform: "uppercase" }}>
+              <span>Rank</span>
+              <span>Student</span>
+              <span>College & Branch</span>
+              <span>Avg Score</span>
+              <span>Tasks & Pts</span>
+              <span>Certificates</span>
+              <span style={{ textAlign: "right" }}>Action</span>
+            </div>
+
+            {leaderboard && leaderboard.length > 0 ? (
+              leaderboard
+                .filter((student) => {
+                  if (!leaderboardSearch.trim()) return true;
+                  const q = leaderboardSearch.toLowerCase();
+                  return (
+                    student.name?.toLowerCase().includes(q) ||
+                    student.college?.toLowerCase().includes(q) ||
+                    student.branch?.toLowerCase().includes(q)
+                  );
+                })
+                .map((student, i) => (
+                  <div
+                    key={student.id}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "60px 2fr 1.2fr 1fr 1fr 1fr 120px",
+                      padding: "14px 20px",
+                      alignItems: "center",
+                      borderBottom: "1px solid var(--border)",
+                      background: i % 2 === 0 ? undefined : "var(--canvas)",
+                      transition: "background 0.2s ease"
+                    }}
+                  >
+                    <div style={{ fontSize: 14, fontWeight: 800, color: i === 0 ? "#fbbf24" : i === 1 ? "#94a3b8" : i === 2 ? "#fdba74" : "var(--muted)" }}>
+                      #{i + 1}
+                    </div>
+
+                    <div>
+                      <b style={{ fontSize: 13, color: "var(--ink)" }}>{student.name}</b>
+                      <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                        {student.email}
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: 12, color: "var(--text)" }}>
+                      <div>{student.college}</div>
+                      <small style={{ color: "var(--muted)" }}>{student.branch}</small>
+                    </div>
+
+                    <div>
+                      <strong style={{ fontSize: 14, color: student.avgScore >= 80 ? "#34d399" : "#60a5fa" }}>
+                        {student.avgScore}%
+                      </strong>
+                      <div style={{ fontSize: 10, color: "var(--muted)" }}>{student.testCount} test(s)</div>
+                    </div>
+
+                    <div>
+                      <strong style={{ fontSize: 13, color: "#a78bfa" }}>
+                        {student.taskCount}
+                      </strong>
+                      <div style={{ fontSize: 10, color: "var(--muted)" }}>+{student.taskPts} pts</div>
+                    </div>
+
+                    <div>
+                      <strong style={{ fontSize: 13, color: "#38bdf8" }}>
+                        {student.certCount}
+                      </strong>
+                      <div style={{ fontSize: 10, color: "var(--muted)" }}>unlocked</div>
+                    </div>
+
+                    <div style={{ textAlign: "right" }}>
+                      <button
+                        type="button"
+                        className="btn secondary"
+                        onClick={() => setSelectedLeaderboardStudent(student)}
+                        style={{ fontSize: 11, padding: "6px 10px" }}
+                      >
+                        <Eye size={12} style={{ marginRight: 4 }} /> View
+                      </button>
+                    </div>
+                  </div>
+                ))
+            ) : (
+              <div style={{ padding: "20px", textAlign: "center", color: "var(--muted)" }}>
+                No students in leaderboard yet.
+              </div>
+            )}
+          </div>
+
+          {leaderboard && leaderboard.length > 0 && leaderboard.filter((s) => 
+            !leaderboardSearch.trim() || 
+            s.name?.toLowerCase().includes(leaderboardSearch.toLowerCase()) ||
+            s.college?.toLowerCase().includes(leaderboardSearch.toLowerCase()) ||
+            s.branch?.toLowerCase().includes(leaderboardSearch.toLowerCase())
+          ).length === 0 && (
+            <div className="empty">No students found matching your search.</div>
+          )}
+        </div>
+      )}
+
+      {/* Student Details Modal */}
+      {selectedLeaderboardStudent && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(15, 23, 42, 0.5)",
+          display: "grid",
+          placeItems: "center",
+          zIndex: 200,
+          padding: 18
+        }}>
+          <div style={{
+            width: "min(560px, 100%)",
+            maxHeight: "90vh",
+            overflow: "auto",
+            padding: 24,
+            borderRadius: 16,
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            boxShadow: "0 25px 80px rgba(15, 23, 42, 0.24)"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 20 }}>
+              <div>
+                <h2 style={{ margin: "5px 0 0", fontSize: 20, color: "var(--ink)" }}>{selectedLeaderboardStudent.name}</h2>
+                <small style={{ color: "var(--muted)", fontSize: 12 }}>{selectedLeaderboardStudent.email}</small>
+              </div>
+              <button
+                type="button"
+                style={{
+                  width: 32,
+                  height: 32,
+                  border: 0,
+                  borderRadius: 8,
+                  background: "var(--canvas)",
+                  color: "var(--muted)",
+                  fontSize: 20,
+                  cursor: "pointer"
+                }}
+                onClick={() => setSelectedLeaderboardStudent(null)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
+              <div style={{ padding: 12, background: "var(--canvas)", borderRadius: 10, border: "1px solid var(--border)" }}>
+                <small style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 4 }}>COLLEGE & BRANCH</small>
+                <b style={{ fontSize: 13, color: "var(--ink)" }}>{selectedLeaderboardStudent.college}</b>
+                <small style={{ display: "block", color: "var(--muted)", fontSize: 11 }}>{selectedLeaderboardStudent.branch}</small>
+              </div>
+              <div style={{ padding: 12, background: "var(--canvas)", borderRadius: 10, border: "1px solid var(--border)" }}>
+                <small style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 4 }}>OVERALL RATING</small>
+                <b style={{ fontSize: 18, color: "#38bdf8" }}>{selectedLeaderboardStudent.overallRating}</b>
+              </div>
+              <div style={{ padding: 12, background: "var(--canvas)", borderRadius: 10, border: "1px solid var(--border)" }}>
+                <small style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 4 }}>AVG SCORE</small>
+                <b style={{ fontSize: 16, color: selectedLeaderboardStudent.avgScore >= 80 ? "#34d399" : "#60a5fa" }}>
+                  {selectedLeaderboardStudent.avgScore}%
+                </b>
+                <small style={{ display: "block", color: "var(--muted)", fontSize: 11 }}>{selectedLeaderboardStudent.testCount} tests</small>
+              </div>
+              <div style={{ padding: 12, background: "var(--canvas)", borderRadius: 10, border: "1px solid var(--border)" }}>
+                <small style={{ color: "var(--muted)", fontSize: 11, display: "block", marginBottom: 4 }}>TASKS COMPLETED</small>
+                <b style={{ fontSize: 16, color: "#a78bfa" }}>{selectedLeaderboardStudent.taskCount}</b>
+                <small style={{ display: "block", color: "var(--muted)", fontSize: 11 }}>+{selectedLeaderboardStudent.taskPts} pts</small>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 20, padding: 14, background: "var(--canvas)", borderRadius: 10, border: "1px solid var(--border)" }}>
+              <small style={{ color: "var(--muted)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", display: "block", marginBottom: 8 }}>CERTIFICATIONS</small>
+              {selectedLeaderboardStudent.certCount > 0 ? (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {[...Array(selectedLeaderboardStudent.certCount)].map((_, i) => (
+                    <span key={i} style={{
+                      display: "inline-block",
+                      padding: "5px 10px",
+                      background: "linear-gradient(135deg, #ECFDF5, #DBEAFE)",
+                      border: "1px solid #A7F3D0",
+                      borderRadius: 8,
+                      fontSize: 11,
+                      color: "#047857",
+                      fontWeight: 600
+                    }}>
+                      🏆 Certificate #{i + 1}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <small style={{ color: "var(--muted)" }}>No certifications unlocked yet</small>
+              )}
+            </div>
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                type="button"
+                className="btn secondary"
+                onClick={() => setSelectedLeaderboardStudent(null)}
+                style={{ flex: 1, fontSize: 12 }}
+              >
+                Close
+              </button>
+              {selectedLeaderboardStudent.email && (
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={() => {
+                    const subject = encodeURIComponent(`Talent Acquisition Opportunity - ${recruiter.companyName}`);
+                    const body = encodeURIComponent(
+                      `Hi ${selectedLeaderboardStudent.name},\n\nWe came across your impressive performance on the HireLytix leaderboard with an overall rating of ${selectedLeaderboardStudent.overallRating}. We would love to discuss career opportunities with ${recruiter.companyName}!\n\nBest regards,\n${companyForm.recruiterName || user.name}\n${companyForm.recruiterTitle || "Recruiter"} • ${recruiter.companyName}`
+                    );
+                    window.location.href = `mailto:${selectedLeaderboardStudent.email}?subject=${subject}&body=${body}`;
+                  }}
+                  style={{ flex: 1, fontSize: 12 }}
+                >
+                  <Send size={12} style={{ marginRight: 4 }} /> Reach Out
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 9: COMPANY PROFILE & EMPLOYER BRANDING */}
       {tab === "company" && (
         <div className="grid" style={{ gridTemplateColumns: "1.6fr 1fr" }}>
           {/* Company Branding Form */}
@@ -2055,7 +2314,7 @@ export default function RecruiterClient({
         </div>
       )}
 
-      {/* TAB 9: RECRUITER SETTINGS DASHBOARD */}
+      {/* TAB 10: RECRUITER SETTINGS DASHBOARD */}
       {tab === "settings" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           {/* Settings Cards Grid */}

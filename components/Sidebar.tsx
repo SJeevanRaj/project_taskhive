@@ -16,7 +16,8 @@ export default async function Sidebar() {
     ] },
     { title: "Insights", items: [
       { label: "Hiring Analytics", href: "/recruiter?tab=analytics", icon: "analytics" },
-      { label: "Talent Pool", href: "/recruiter?tab=talent", icon: "user" }
+      { label: "Talent Pool", href: "/recruiter?tab=talent", icon: "user" },
+      { label: "Student Leaderboard", href: "/recruiter?tab=leaderboard", icon: "trophy" }
     ] },
     { title: "Company", items: [
       { label: "Company Profile", href: "/recruiter?tab=company", icon: "building" }

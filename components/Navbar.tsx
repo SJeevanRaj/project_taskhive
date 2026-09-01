@@ -17,6 +17,7 @@ export default async function Navbar() {
             <Link href="/recruiter?tab=candidates">Candidates</Link>
             <Link href="/recruiter?tab=interviews">Interviews</Link>
             <Link href="/recruiter?tab=talent">Talent Pool</Link>
+            <Link href="/recruiter?tab=leaderboard">Leaderboard</Link>
             <Link href="/recruiter?tab=company">Company Profile</Link>
             <Link href="/recruiter?tab=settings">Settings</Link>
           </>

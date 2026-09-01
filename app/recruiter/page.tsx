@@ -186,6 +186,41 @@ export default async function Recruiter({
     taskPoints: s.taskSubmissions.reduce((sum, t) => sum + t.score, 0)
   }));
 
+  // Fetch all students with their scores for leaderboard
+  const allStudents = await db.user.findMany({
+    where: { role: "STUDENT" },
+    include: {
+      attempts: true,
+      taskSubmissions: { where: { status: "COMPLETED" } },
+      certificates: true
+    },
+    orderBy: { createdAt: "asc" }
+  });
+
+  const leaderboard = allStudents
+    .map((s) => {
+      const avgScore = s.attempts.length
+        ? Math.round(s.attempts.reduce((a, b) => a + b.score, 0) / s.attempts.length)
+        : 0;
+      const taskPts = s.taskSubmissions.reduce((sum, t) => sum + t.score, 0);
+      const overallRating = Math.round(avgScore * 0.6 + (taskPts / 10) * 0.4);
+
+      return {
+        id: s.id,
+        name: s.name || "Unknown",
+        email: s.email || "",
+        college: s.college || "Campus Scholar",
+        branch: s.branch || "Engineering",
+        avgScore: avgScore || 0,
+        testCount: s.attempts.length || 0,
+        taskCount: s.taskSubmissions.length || 0,
+        taskPts: taskPts || 0,
+        certCount: s.certificates.length || 0,
+        overallRating: overallRating || 0
+      };
+    })
+    .sort((a, b) => b.overallRating - a.overallRating || b.avgScore - a.avgScore);
+
   return (
     <Shell>
       <RecruiterClient
@@ -209,6 +244,7 @@ export default async function Recruiter({
         }}
         jobs={serializedJobs}
         talentPool={serializedTalent}
+        leaderboard={leaderboard}
       />
     </Shell>
   );
