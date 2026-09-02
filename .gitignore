@@ -1,6 +1,10 @@
 node_modules
 .next
 .env
+.env.production
+.env.local
+# Never commit AWS credentials or secret files
+*.csv
 prisma/dev.db
 prisma/dev.db-journal
 *.log
